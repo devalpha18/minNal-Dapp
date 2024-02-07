@@ -4,9 +4,9 @@
   overflow: scroll;
   text-align: center;
   padding-top: 1rem;
-  padding-left: 8rem;
+  padding-left: 5rem;
   padding-bottom: 1rem;
-  padding-right: 10rem;
+  padding-right: 5rem;
   
 }
 
@@ -58,8 +58,6 @@
   background: -webkit-linear-gradient(right, #2d6827 0%, #194f67 60%) ;
   height:100%;
   padding: 1rem 1rem;
-  margin-left: 8rem;
-
 }
 
 .SaleHeader {
@@ -80,6 +78,7 @@
   margin-bottom: 2rem;
   margin-left:0rem;
   margin-right: 0rem;
+  gap: 10px;
   width: auto;
   padding: auto;
 }
