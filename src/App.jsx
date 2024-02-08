@@ -124,7 +124,8 @@ function App() {
     const tokenContract = new ethers.Contract(TOKEN_ADDRESS, Token_Abi.abi, provider);
     const ICO_balance = await tokenContract.balanceOf(ICO_ADDRESS)
     const Account_balance = await tokenContract.balanceOf(ethereum.selectedAccount)
-      setBalanceAmout(ICO_balance.toString(), Account_balance.toString())
+    console.log("ICO_balance, Account_balance", ICO_balance, Account_balance)
+    setBalanceAmout({ICO_balance: ICO_balance.toString(), Account_balance: Account_balance.toString()})
   }
 
   // Render Methods
