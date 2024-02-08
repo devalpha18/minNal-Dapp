@@ -161,7 +161,6 @@ const App = () => {
         await buyToken(tokenAmount);
         setTokenAmount("");
       }
-      
     }
 
     return (
