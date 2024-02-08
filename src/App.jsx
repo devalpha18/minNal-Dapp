@@ -9,7 +9,7 @@ import Token_Abi from './assets/Token.json'
 const ICO_ADDRESS = '0x76B4084209Eb15754983788bd8e3cb0E9c631b3A';
 const TOKEN_ADDRESS = "0x9Ab5c04Ef221ee48f344C114f2233fA4ee896fc2";
 
-function Footer() {
+const Footer = () => {
   return (
     <div className="footer-container">
       <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
@@ -17,12 +17,14 @@ function Footer() {
   );
 }
 
-function App() {
-  const [balanceAmout, setBalanceAmout] = useState({ICO_balance:"", Account_balance:""})
+const App = () => {
+  const [accBalanceAmount, setAccBalanceAmount] = useState();
+  const [tokenBalanceAmount, setTokenBalanceAmount] = useState();
+  
   useEffect(() => {
-    getBalance()
-    console.log("balanceAmout", balanceAmout)
-  }, [balanceAmout])
+    checkIfWalletIsConnected();
+    getBalance();
+  }, [])
 
   const [currentAccount, setCurrentAccount] = useState("");
   const checkIfWalletIsConnected = async () => {
@@ -39,7 +41,6 @@ function App() {
 
     if (accounts.length != 0) {
       const account = accounts[0]
-      console.log("Found an authorized account", account);
       setCurrentAccount(account);
     }
     else {
@@ -77,8 +78,10 @@ function App() {
           gasLimit: ethers.utils.parseUnits("200000", 0),
           value: tokenAmountInEther
         };
-        let tx = await Token.buy(options);
-        console.log("Buy", tx);
+        const tx = await Token.buy(options);
+        const result =  await tx.wait();
+        console.log(result)
+        if(result.confirmations) getBalance()
       } else {
         console.log("Ethereum object doesn't exist!");
       }
@@ -106,8 +109,9 @@ function App() {
           value: tokenAmountInEther
         };
         console.log("options", options)
-        let tx = await Token.withdraw(ethers.utils.parseEther(amount));
-        console.log("Buy", tx);
+        const tx = await Token.withdraw(ethers.utils.parseEther(amount)).wait();
+        const result =  await tx.wait();
+        if(result.confirmations) getBalance()
       } else {
         console.log("Ethereum object doesn't exist!");
       }
@@ -119,18 +123,20 @@ function App() {
   }
 
   const getBalance = async () => {
-    const provider = new ethers.providers.JsonRpcProvider("https://rpc.mordor.etccooperative.org");
-
-    const tokenContract = new ethers.Contract(TOKEN_ADDRESS, Token_Abi.abi, provider);
-    const ICO_balance = await tokenContract.balanceOf(ICO_ADDRESS)
-    const Account_balance = await tokenContract.balanceOf(ethereum.selectedAccount)
+    const provider = new ethers.providers.Web3Provider(ethereum);
+    const signer = provider.getSigner();
+    const tokenContract = new ethers.Contract(TOKEN_ADDRESS, Token_Abi.abi, signer);
+    const tokenDecimal = await tokenContract.decimals()
+    const ICO_balance = await tokenContract.balanceOf(ICO_ADDRESS) / Math.pow(10, tokenDecimal)
+    const Account_balance = await tokenContract.balanceOf(ethereum.selectedAddress) / Math.pow(10, tokenDecimal)
     console.log("ICO_balance, Account_balance", ICO_balance, Account_balance)
-    setBalanceAmout({ICO_balance: ICO_balance.toString(), Account_balance: Account_balance.toString()})
+    setTokenBalanceAmount(ICO_balance)
+    setAccBalanceAmount(Account_balance)
   }
 
   // Render Methods
-  function Wallet() {
-    return (
+  const Wallet = () => {
+    return (  
       currentAccount === "" ? (
         <button onClick={connectWallet} className="cta-button connect-wallet-button">
           Connect Wallet
@@ -143,18 +149,17 @@ function App() {
     );
   }
 
-  function Buy(props) {
+  const Buy = (props) => {
     const [tokenAmount, setTokenAmount] = useState("");
 
-    function handleAmountInput(e) {
+    const handleAmountInput = (e) => {
       setTokenAmount(e.target.value);
     }
 
-    function handleBuy() {
+    const handleBuy = async () => {
       if (tokenAmount >= props.min && tokenAmount <= props.max) {
-        buyToken(tokenAmount);
+        await buyToken(tokenAmount);
         setTokenAmount("");
-        getBalance
       }
       
     }
@@ -167,7 +172,7 @@ function App() {
               <span className="input-group-text">TEST Token</span>
             </div>
 
-            <input type="number" min={props.min} max={props.max} step="any" onChange={handleAmountInput} value={tokenAmount} className="form-control" placeholder="Enter Amount" />
+            <input type="number" min={props.min} max={props.max} step="100" onChange={handleAmountInput} value={tokenAmount} className="form-control" placeholder="Enter Amount" />
 
           </div>
         </div>
@@ -181,15 +186,16 @@ function App() {
     );
   }
 
-  function Withdraw() {
+  const Withdraw = () => {
     const [withdrawAmount, setWithdrawAmount] = useState("");
 
-    function handleAmountInput(e) {
+    const handleAmountInput = (e) => {
       setWithdrawAmount(e.target.value);
     }
 
-    function handleWithdraw() {
-      withdrawToken(withdrawAmount);
+    const handleWithdraw = async () => {
+      await withdrawToken(withdrawAmount);
+      await getBalance();
       setWithdrawAmount("");
     }
 
@@ -200,8 +206,7 @@ function App() {
             <div className="input-group-prepend">
               <span className="input-group-text">TEST Token</span>
             </div>
-            <input type="number" step="any" onChange={handleAmountInput} value={withdrawAmount} className="form-control" placeholder="Enter Amount" />
-
+            <input type="number" onChange={handleAmountInput} value={withdrawAmount} className="form-control" placeholder="Enter Amount" />
           </div>
         </div>
 
@@ -214,7 +219,7 @@ function App() {
     );
   }
 
-  function SaleCard() {
+  const SaleCard = () => {
     return (
       (currentAccount === "") ? (
         ""
@@ -222,9 +227,9 @@ function App() {
         <div className="col-lg-6">
           <div className="saleCard">
             <div className='row sale-row'>
-              <p className='saleDesc'>Account Balance: <span className="saleDescVal">{balanceAmout.Account_balance}</span></p>
+              <p className='saleDesc'>Account Balance: <span className="saleDescVal">{accBalanceAmount}</span></p>
               <p className='saleDesc'>Token Name: <span className="saleDescVal">TEST TOKEN</span></p>
-              <p className='saleDesc'>Token Balanace: <span className="saleDescVal">{balanceAmout.ICO_balance}</span></p>
+              <p className='saleDesc'>Available Token Balanace: <span className="saleDescVal">{tokenBalanceAmount}</span></p>
               <p className='saleDesc'>Price: <span className="saleDescVal">1 TEST = 0.015 METC</span></p>
             </div>
             <Buy min={100} max={500} />
@@ -235,9 +240,7 @@ function App() {
     );
   }
 
-  useEffect(() => {
-    checkIfWalletIsConnected();
-  }, [])
+
 
   return (
     <div className="App container-fluid">
