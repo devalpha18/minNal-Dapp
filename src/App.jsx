@@ -203,9 +203,9 @@ const App = () => {
         <div className='row sale-row'>
           <div className="input-group">
             <div className="input-group-prepend">
-              <span className="input-group-text">TEST Token</span>
+              <span className="input-group-text">ETC Token</span>
             </div>
-            <input type="number" onChange={handleAmountInput} value={withdrawAmount} className="form-control" placeholder="Enter Amount" />
+            <input type="number" step="any" onChange={handleAmountInput} value={withdrawAmount} className="form-control" placeholder="Enter Amount" />
           </div>
         </div>
 
