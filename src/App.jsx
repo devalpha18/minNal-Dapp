@@ -99,7 +99,7 @@ const App = () => {
       if (ethereum) {
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
-        const Token = new ethers.Contract(ICO_ADDRESS, ICO.abi, signer);
+        const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
         const tokenAmountInEther = ethers.utils.parseEther((0.015 * Number(amount)).toString());
         console.log("tokenAmountInEther", tokenAmountInEther)
         const gasPrice = await provider.getGasPrice();
