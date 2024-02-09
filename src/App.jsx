@@ -211,7 +211,7 @@ const App = () => {
 
         <div className='row sale-row'>
           <button onClick={handleWithdraw} className="cta-button connect-wallet-button">
-            Withdraw TEST_TOKEN
+            Withdraw ETC
           </button>
         </div>
       </div>
