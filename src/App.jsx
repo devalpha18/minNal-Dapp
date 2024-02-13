@@ -303,9 +303,8 @@ const App = () => {
 
         {SaleCard()}
 
-        {Footer()}
-
       </div>
+      {Footer()}
     </div>
   );
 };

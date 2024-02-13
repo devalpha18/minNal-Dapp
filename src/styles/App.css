@@ -14,10 +14,6 @@
   background-color: #0d1116;
 }
 
-.app-container {
-  height: 100%;
-}
-
 .app-row {
   padding-top: 3rem;
 }
@@ -205,7 +201,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-bottom: 30px;
+  padding-block: 50px;
 }
 
 .twitter-logo {
