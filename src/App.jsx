@@ -6,8 +6,8 @@ import ICO_Abi from './assets/ICO.json'
 import Token_Abi from './assets/Token.json'
 
 // Constants
-const ICO_ADDRESS = '0x76B4084209Eb15754983788bd8e3cb0E9c631b3A';
-const TOKEN_ADDRESS = "0x9Ab5c04Ef221ee48f344C114f2233fA4ee896fc2";
+const ICO_ADDRESS = '0x82033C4aB114F67855510438269c53a1a5df2bf7';
+const TOKEN_ADDRESS = "0x701Ed382189579B19f698e7C1A9E2531A2aC1694";
 
 const Footer = () => {
   return (
@@ -100,16 +100,7 @@ const App = () => {
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
         const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
-        const tokenAmountInEther = ethers.utils.parseEther((0.015 * Number(amount)).toString());
-        console.log("tokenAmountInEther", tokenAmountInEther)
-        const gasPrice = await provider.getGasPrice();
-        const options = {
-          gasPrice,
-          gasLimit: 300000, // Set gas limit as a number
-          value: tokenAmountInEther
-        };
-        console.log("options", options)
-        const tx = await Token.withdraw(ethers.utils.parseEther(amount)).wait();
+        const tx = await Token.withdraw(ethers.utils.parseEther(amount));
         const result =  await tx.wait();
         if(result.confirmations) getBalance()
       } else {
