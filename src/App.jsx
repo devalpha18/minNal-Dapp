@@ -6,7 +6,7 @@ import ICO_Abi from './assets/ICO.json'
 import Token_Abi from './assets/Token.json'
 
 // Constants
-const ICO_ADDRESS = '0x76B4084209Eb15754983788bd8e3cb0E9c631b3A';
+const ICO_ADDRESS = '0xF985783e379E0Bd87B3f7E361609493e82e2C03F';
 const TOKEN_ADDRESS = "0x9Ab5c04Ef221ee48f344C114f2233fA4ee896fc2";
 
 const Footer = () => {
@@ -113,6 +113,27 @@ const App = () => {
     }
   }
 
+  const withdrawERC20 = async (amount) => {
+    try {
+      const { ethereum } = window;
+    
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
+        const tx = await Token.withdrawERC20(ethers.utils.parseEther(amount));
+        const result =  await tx.wait();
+        if(result.confirmations) getBalance()
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    }
+    
+    catch (error) {
+      console.log(error)
+    }
+  }
+
   const getBalance = async () => {
     const provider = new ethers.providers.Web3Provider(ethereum);
     const signer = provider.getSigner();
@@ -184,8 +205,12 @@ const App = () => {
     }
 
     const handleWithdraw = async () => {
-      await withdrawToken(withdrawAmount);
-      await getBalance();
+      withdrawToken(withdrawAmount);
+      setWithdrawAmount("");
+    }
+    
+    const handleWithdrawERC20 = async () => {
+      withdrawERC20(withdrawAmount);
       setWithdrawAmount("");
     }
 
@@ -194,7 +219,7 @@ const App = () => {
         <div className='row sale-row'>
           <div className="input-group">
             <div className="input-group-prepend">
-              <span className="input-group-text">ETC Token</span>
+              <span className="input-group-text">Withdraw Amount</span>
             </div>
             <input type="number" step="any" onChange={handleAmountInput} value={withdrawAmount} className="form-control" placeholder="Enter Amount" />
           </div>
@@ -203,6 +228,9 @@ const App = () => {
         <div className='row sale-row'>
           <button onClick={handleWithdraw} className="cta-button connect-wallet-button">
             Withdraw ETC
+          </button>
+          <button onClick={handleWithdrawERC20} className="cta-button connect-wallet-button">
+            Withdraw MinnalX01
           </button>
         </div>
       </div>
