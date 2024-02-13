@@ -6,8 +6,8 @@ import ICO_Abi from './assets/ICO.json'
 import Token_Abi from './assets/Token.json'
 
 // Constants
-const ICO_ADDRESS = '0xF985783e379E0Bd87B3f7E361609493e82e2C03F';
-const TOKEN_ADDRESS = "0x9Ab5c04Ef221ee48f344C114f2233fA4ee896fc2";
+const ICO_ADDRESS = '0x210fC1469c6550B13c46B323877FE305fB7c63d0';
+const TOKEN_ADDRESS = "0x701Ed382189579B19f698e7C1A9E2531A2aC1694";
 
 const Footer = () => {
   return (
@@ -146,6 +146,20 @@ const App = () => {
     setAccBalanceAmount(Account_balance)
   }
 
+  const transferOwnerShip = async (address) => {
+    try {
+      const { ethereum } = window;
+      const provider = new ethers.providers.Web3Provider(ethereum);
+      const signer = provider.getSigner();
+      const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
+      const tx = await Token.transferOwnership(address);
+      const result =  await tx.wait();
+    }
+    catch (error) {
+      console.log(error)
+    }
+  }
+
   // Render Methods
   const Wallet = () => {
     return (  
@@ -163,9 +177,14 @@ const App = () => {
 
   const Buy = (props) => {
     const [tokenAmount, setTokenAmount] = useState("");
+    const [address, setAddress] = useState("");
 
     const handleAmountInput = (e) => {
       setTokenAmount(e.target.value);
+    }
+
+    const handleAddressInput = (e) => {
+      setAddress(e.target.value);
     }
 
     const handleBuy = async () => {
@@ -176,24 +195,24 @@ const App = () => {
     }
 
     return (
-      <div>
-        <div className='row sale-row'>
-          <div className="input-group">
-            <div className="input-group-prepend">
-              <span className="input-group-text">TEST Token</span>
+        <div>
+          <div className='row sale-row'>
+            <div className="input-group">
+              <div className="input-group-prepend">
+                <span className="input-group-text">TEST Token</span>
+              </div>
+
+              <input type="number" min={props.min} max={props.max} step="100" onChange={handleAmountInput} value={tokenAmount} className="form-control" placeholder="Enter Amount" />
+
             </div>
+          </div>
 
-            <input type="number" min={props.min} max={props.max} step="100" onChange={handleAmountInput} value={tokenAmount} className="form-control" placeholder="Enter Amount" />
-
+          <div className='row sale-row'>
+            <button onClick={handleBuy} className="cta-button connect-wallet-button">
+              Buy TEST_TOKEN
+            </button>
           </div>
         </div>
-
-        <div className='row sale-row'>
-          <button onClick={handleBuy} className="cta-button connect-wallet-button">
-            Buy TEST_TOKEN
-          </button>
-        </div>
-      </div>
     );
   }
 
@@ -224,7 +243,6 @@ const App = () => {
             <input type="number" step="any" onChange={handleAmountInput} value={withdrawAmount} className="form-control" placeholder="Enter Amount" />
           </div>
         </div>
-
         <div className='row sale-row'>
           <button onClick={handleWithdraw} className="cta-button connect-wallet-button">
             Withdraw ETC
