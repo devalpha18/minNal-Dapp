@@ -6,8 +6,8 @@ import ICO_Abi from './assets/ICO.json'
 import Token_Abi from './assets/Token.json'
 
 // Constants
-const ICO_ADDRESS = '0x82033C4aB114F67855510438269c53a1a5df2bf7';
-const TOKEN_ADDRESS = "0x701Ed382189579B19f698e7C1A9E2531A2aC1694";
+const ICO_ADDRESS = '0x76B4084209Eb15754983788bd8e3cb0E9c631b3A';
+const TOKEN_ADDRESS = "0x9Ab5c04Ef221ee48f344C114f2233fA4ee896fc2";
 
 const Footer = () => {
   return (
