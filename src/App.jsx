@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { ethers } from "ethers";
 import './styles/App.css';
 import twitterLogo from './assets/twitter-logo.svg';
-import ICO_Abi from './assets/ICO.json'
 import Token_Abi from './assets/Token.json'
+import ICO_Abi from './assets/ICO.json'
+import NFT_Abi from './assets/NDL.json'
 
 // Constants
-const ICO_ADDRESS = '0x210fC1469c6550B13c46B323877FE305fB7c63d0';
-const TOKEN_ADDRESS = "0x701Ed382189579B19f698e7C1A9E2531A2aC1694";
+const ICO_ADDRESS = '0x30E0dA327A67B7cace39b846E21417EF379F1d9a';
+const TOKEN_ADDRESS = "0x67d543237BA0db4359EEeFE9906929B197907301";
+const NFT_ADDRESS = '0x609083Ea9a5DBba70B6A0A81C5eB3D9f28069E99';
 
 const Footer = () => {
   return (
@@ -20,8 +22,23 @@ const Footer = () => {
 const App = () => {
   const [accBalanceAmount, setAccBalanceAmount] = useState();
   const [tokenBalanceAmount, setTokenBalanceAmount] = useState();
+  const [ethereumObj, setEthereum] = useState()
+  const [tokenContract, setTokenContract] = useState();
+  const [icoContract, setICOContract] = useState();
+  const [NFTContract, setNFTContract] = useState();
+  const [gasPrice, setGasprice] = useState();
   
   useEffect(() => {
+    const provider = new ethers.providers.Web3Provider(ethereum);
+    const signer = provider.getSigner();
+    const gasPrice = provider.getGasPrice();
+    setGasprice(gasPrice)
+    const Token = new ethers.Contract(TOKEN_ADDRESS, Token_Abi.abi, signer);
+    const ICO = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
+    const NFT = new ethers.Contract(NFT_ADDRESS, NFT_Abi.abi, signer);
+    setTokenContract(Token);
+    setICOContract(ICO);
+    setNFTContract(NFT);
     checkIfWalletIsConnected();
     getBalance();
   }, [])
@@ -29,7 +46,20 @@ const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window;
-    if (!ethereum) {
+    const setEthereumObj = () => {
+      return new Promise((resolve, reject) => {
+        if(ethereum){
+          setEthereum(ethereum)
+          resolve(ethereum)
+        }else{
+          reject(false)
+        }
+      })
+    }
+
+    const flag = await setEthereumObj()
+
+    if (!flag) {
       console.log("Make sure you have metamask");
       return;
     }
@@ -50,13 +80,13 @@ const App = () => {
 
   const connectWallet = async () => {
     try {
-      const { ethereum } = window;
-      if (!ethereum) {
+      if (!ethereumObj) {
         console.log("Get Metamask");
         return;
       }
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await ethereumObj.request({ method: 'eth_requestAccounts' });
       setCurrentAccount(accounts[0]);
+      getBalance()
     }
     catch (error) {
       console.log(error);
@@ -65,20 +95,15 @@ const App = () => {
 
   const buyToken = async (amount) => {
     try {
-      const { ethereum } = window;
-
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
+      if (ethereumObj) {
         const tokenAmountInEther = (ethers.utils.parseEther((0.015 * Number(amount)).toString()));
-        const gasPrice = await provider.getGasPrice();
         const options = {
           gasPrice,
           gasLimit: ethers.utils.parseUnits("200000", 0),
           value: tokenAmountInEther
         };
-        const tx = await Token.buy(options);
+        console.log("tokenContract", tokenContract)
+        const tx = await icoContract.buy(options);
         const result =  await tx.wait();
         console.log(result)
         if(result.confirmations) getBalance()
@@ -94,13 +119,8 @@ const App = () => {
 
   const withdrawToken = async (amount) => {
     try {
-      const { ethereum } = window;
-    
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
-        const tx = await Token.withdraw(ethers.utils.parseEther(amount));
+      if (ethereumObj) {
+        const tx = await icoContract.withdraw(ethers.utils.parseEther(amount));
         const result =  await tx.wait();
         if(result.confirmations) getBalance()
       } else {
@@ -115,13 +135,8 @@ const App = () => {
 
   const withdrawERC20 = async (amount) => {
     try {
-      const { ethereum } = window;
-    
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
-        const tx = await Token.withdrawERC20(ethers.utils.parseEther(amount));
+      if (ethereumObj) {
+        const tx = await icoContract.withdrawERC20(ethers.utils.parseEther(amount));
         const result =  await tx.wait();
         if(result.confirmations) getBalance()
       } else {
@@ -135,32 +150,15 @@ const App = () => {
   }
 
   const getBalance = async () => {
-    const provider = new ethers.providers.Web3Provider(ethereum);
-    const signer = provider.getSigner();
-    const tokenContract = new ethers.Contract(TOKEN_ADDRESS, Token_Abi.abi, signer);
-    const tokenDecimal = await tokenContract.decimals()
-    const ICO_balance = await tokenContract.balanceOf(ICO_ADDRESS) / Math.pow(10, tokenDecimal)
-    const Account_balance = await tokenContract.balanceOf(ethereum.selectedAddress) / Math.pow(10, tokenDecimal)
-    console.log("ICO_balance, Account_balance", ICO_balance, Account_balance)
-    setTokenBalanceAmount(ICO_balance)
-    setAccBalanceAmount(Account_balance)
-  }
-
-  const transferOwnerShip = async (address) => {
-    try {
-      const { ethereum } = window;
-      const provider = new ethers.providers.Web3Provider(ethereum);
-      const signer = provider.getSigner();
-      const Token = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
-      const tx = await Token.transferOwnership(address);
-      const result =  await tx.wait();
-    }
-    catch (error) {
-      console.log(error)
+    if(ethereumObj){
+      const tokenDecimal = await tokenContract.decimals()
+      const ICO_balance = await tokenContract.balanceOf(ICO_ADDRESS) / Math.pow(10, tokenDecimal)
+      const Account_balance = await tokenContract.balanceOf(ethereumObj.selectedAddress) / Math.pow(10, tokenDecimal)
+      setTokenBalanceAmount(ICO_balance)
+      setAccBalanceAmount(Account_balance)
     }
   }
 
-  // Render Methods
   const Wallet = () => {
     return (  
       currentAccount === "" ? (
@@ -177,14 +175,9 @@ const App = () => {
 
   const Buy = (props) => {
     const [tokenAmount, setTokenAmount] = useState("");
-    const [address, setAddress] = useState("");
 
     const handleAmountInput = (e) => {
       setTokenAmount(e.target.value);
-    }
-
-    const handleAddressInput = (e) => {
-      setAddress(e.target.value);
     }
 
     const handleBuy = async () => {
@@ -276,7 +269,49 @@ const App = () => {
     );
   }
 
+  const SaleNFT = () => {
+    const mint = async () => {
+      const tokenURI = "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmY5DeDf9dyFokXuX7kjgrC1WkKDeTLEEf3U7eCYw1DLjW/5.jpg"
+      console.log("NFT_contract", NFTContract)
+      const options = {
+        gasPrice,
+        gasLimit: ethers.utils.parseUnits("500000", 0),
+      }
+      const tx = NFTContract.mint(ethereumObj.selectedAddress, tokenURI ,options)
+      console.log(tx)
+    }
 
+    const purchaseLicense = async () => {
+      console.log("NFTContract", NFTContract)
+      const options = {
+        value:ethers.utils.parseEther("5.68"),
+        gasPrice,
+        gasLimit: ethers.utils.parseUnits("500000", 0),
+      }
+      const tx = await NFTContract.purchaseLicense(0 ,options)
+      const result = await tx.wait()
+      console.log("result", result)
+    }
+
+    return (
+      (currentAccount === "") ? (
+        ""
+      ) : (
+        <div className="col-lg-6">
+          <div className="saleCard">
+            <div className='row sale-row'>
+              <button onClick={mint} className="cta-button connect-wallet-button">
+                NFT MINT
+              </button>
+              <button onClick={purchaseLicense} className="cta-button connect-wallet-button">
+                PurchaseLicense
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    );
+  }
 
   return (
     <div className="App container-fluid">
@@ -302,6 +337,7 @@ const App = () => {
         </div>
 
         {SaleCard()}
+        {SaleNFT()}
 
       </div>
       {Footer()}
