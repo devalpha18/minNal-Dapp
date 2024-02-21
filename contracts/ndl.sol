@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-// import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-
 library SignedMath {
     function max(int256 a, int256 b) internal pure returns (int256) {
         return a > b ? a : b;
@@ -443,7 +441,6 @@ library Strings {
 interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
-
     function totalSupply() external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
     function transfer(address to, uint256 value) external returns (bool);
@@ -528,14 +525,7 @@ interface IERC721Receiver {
 }
 
 interface IERC4906 is IERC721 {
-    /// @dev This event emits when the metadata of a token is changed.
-    /// So that the third-party platforms such as NFT market could
-    /// timely update the images and related attributes of the NFT.
     event MetadataUpdate(uint256 _tokenId);
-
-    /// @dev This event emits when the metadata of a range of tokens is changed.
-    /// So that the third-party platforms such as NFT market could
-    /// timely update the images and related attributes of the NFTs.
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 }
 
@@ -584,9 +574,6 @@ abstract contract Context {
 }
 
 abstract contract ERC165 is IERC165 {
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
     function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
         return interfaceId == type(IERC165).interfaceId;
     }
@@ -633,7 +620,6 @@ abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Er
 
     function tokenURI(uint256 tokenId) public view virtual returns (string memory) {
         _requireOwned(tokenId);
-
         string memory baseURI = _baseURI();
         return bytes(baseURI).length > 0 ? string.concat(baseURI, tokenId.toString()) : "";
     }
@@ -872,7 +858,7 @@ abstract contract ERC721URIStorage is IERC4906, ERC721 {
     }
 }
 
-contract NFTLicense is ERC721URIStorage{
+contract NFTLicense is ERC721URIStorage, ReentrancyGuard{
     using SafeMath for uint256;
 
     uint256 public totalSupply;
@@ -894,30 +880,29 @@ contract NFTLicense is ERC721URIStorage{
 
     modifier onlyOwner() {
         require(msg.sender == owner, 'Must be NFT deployer');
-        _;
+        _;  
     }
 
     event Mint(address indexed _to, uint256 _tokenId, string _tokenURI);
 
-    function purchaseLicense(uint256 tokenId) public payable returns (bool sucess) {
-        uint256 totalAmount = ( msg.value * 3 / 10 ) / tokenPrice * 1 ether;
+    function purchaseLicense(uint256 tokenId) public payable nonReentrant returns (bool) {
+        uint256 totalAmount = (msg.value.div(10).mul(3)).div(tokenPrice).mul(1 ether);
         require(newToken.balanceOf(msg.sender) >= totalAmount, "Insufficient Test Token balance");
-
-        payable(admin1).transfer(msg.value.div(5));
-        payable(admin2).transfer(msg.value.div(5));
-        payable(lpaddress).transfer(msg.value - (msg.value.div(5).mul(2)));
-        
-        newToken.transferFrom(msg.sender, lpaddress, totalAmount);
-        NFTapprove(admin1, tokenId);
-        safeTransferFrom(admin1, msg.sender, tokenId);
+        payable(admin1).transfer(msg.value.div(10).mul(2));
+        payable(admin2).transfer(msg.value.div(10).mul(2));
+        payable(lpaddress).transfer((msg.value.div(10).mul(3)));
+        payable(msg.sender).transfer(msg.value.div(10).mul(3));
+        require(newToken.transferFrom(msg.sender, lpaddress, totalAmount), "Token transfer failed");
+        transferFrom(address(this), msg.sender, tokenId);
         return true;
     }
 
-    function mint(address player, string memory tokenURI) public returns (uint256) {
+    function mint(string memory tokenURI) public returns (uint256) {
         uint256 tokenId = _nextTokenId++;
-        _mint(player, tokenId);
-        _setTokenURI(tokenId, tokenURI);
-
+        for(uint256 i = 0;  i > tokenId; i++ ){
+            _mint(address(this), tokenId);
+            _setTokenURI(tokenId, tokenURI);
+        }
         return tokenId;
     }
 }

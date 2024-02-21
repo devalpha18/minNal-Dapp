@@ -8,8 +8,8 @@ import NFT_Abi from './assets/NDL.json'
 
 // Constants
 const ICO_ADDRESS = '0x30E0dA327A67B7cace39b846E21417EF379F1d9a';
-const TOKEN_ADDRESS = "0x67d543237BA0db4359EEeFE9906929B197907301";
-const NFT_ADDRESS = '0x609083Ea9a5DBba70B6A0A81C5eB3D9f28069E99';
+const TOKEN_ADDRESS = "0x0c7Bb185696eC8aF91538b893852B06248BDe9aF";
+const NFT_ADDRESS = '0x326253cAc1c07ecBcD43d2B31751C0C25ad2202e';
 
 const Footer = () => {
   return (
@@ -27,12 +27,26 @@ const App = () => {
   const [icoContract, setICOContract] = useState();
   const [NFTContract, setNFTContract] = useState();
   const [gasPrice, setGasprice] = useState();
+  const [ETCPrice, setETCPrice] = useState()
   
   useEffect(() => {
+    const coingeckoApiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum-classic&vs_currencies=usd';
+    fetch(fetch(coingeckoApiUrl)
+    .then(response => response.json())
+    .then(data => {
+        const etcPrice = data['ethereum-classic'].usd;
+        console.log(`Current ETC Price: $${etcPrice}`);
+        setETCPrice(etcPrice);
+    })
+    .catch(error => {
+        console.error('Error fetching ETC price:', error);
+    }))
+
     const provider = new ethers.providers.Web3Provider(ethereum);
     const signer = provider.getSigner();
-    const gasPrice = provider.getGasPrice();
-    setGasprice(gasPrice)
+    provider.getGasPrice().then(res => {
+      setGasprice(res)
+    });
     const Token = new ethers.Contract(TOKEN_ADDRESS, Token_Abi.abi, signer);
     const ICO = new ethers.Contract(ICO_ADDRESS, ICO_Abi.abi, signer);
     const NFT = new ethers.Contract(NFT_ADDRESS, NFT_Abi.abi, signer);
@@ -270,27 +284,45 @@ const App = () => {
   }
 
   const SaleNFT = () => {
+    const [lisenceNumber, setLisenceNumber] = useState()
     const mint = async () => {
-      const tokenURI = "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmY5DeDf9dyFokXuX7kjgrC1WkKDeTLEEf3U7eCYw1DLjW/5.jpg"
-      console.log("NFT_contract", NFTContract)
-      const options = {
-        gasPrice,
-        gasLimit: ethers.utils.parseUnits("500000", 0),
-      }
-      const tx = NFTContract.mint(ethereumObj.selectedAddress, tokenURI ,options)
+      const tokenURI = "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmY5DeDf9dyFokXuX7kjgrC1WkKDeTLEEf3U7eCYw1DLjW/1.jpg"
+      const tx = await NFTContract.mint(tokenURI)
       console.log(tx)
     }
 
-    const purchaseLicense = async () => {
-      console.log("NFTContract", NFTContract)
-      const options = {
-        value:ethers.utils.parseEther("5.68"),
-        gasPrice,
-        gasLimit: ethers.utils.parseUnits("500000", 0),
+    const getETCAmont  = () => {
+      const tokenPrice = 0.2;
+      const lisencePrice = lisenceNumber != 10 ? 150 * lisenceNumber : 1350;
+      const lisenceETCAll = lisencePrice / ETCPrice;
+      const lisenceETC = (( lisencePrice / 10 ) * 7) / ETCPrice;
+      const lisenceToken = ((( lisencePrice / 10 ) * 3) / ETCPrice) /  tokenPrice;
+      const data = {
+        lisenceETCAll,
+        lisenceETC,
+        lisenceToken
       }
-      const tx = await NFTContract.purchaseLicense(0 ,options)
-      const result = await tx.wait()
-      console.log("result", result)
+      return data;
+    }
+
+    const purchaseLicense = async () => {
+      setLisenceNumber("")
+      const prices = getETCAmont()
+      console.log("prices.lisenceETC", prices.lisenceETC, "prices.lisenceToken", prices.lisenceToken)
+      const tokenAmountInEther = ethers.utils.parseEther(prices.lisenceETCAll.toString());
+      const options = {
+        value: tokenAmountInEther,
+        gasPrice,
+        gasLimit: ethers.utils.parseUnits("200000", 0),
+      }
+      const approveValue = await tokenContract.approve(NFT_ADDRESS, ethers.utils.parseEther(prices.lisenceToken.toString()))
+      const approveValueTx = await approveValue.wait();
+      console.log("approveValueTx", approveValueTx)
+      if(approveValueTx.status == 1){
+        const tx = await NFTContract.purchaseLicense("0", options)
+        const result = await tx.wait()
+        console.log("result", result)
+      }
     }
 
     return (
@@ -300,11 +332,26 @@ const App = () => {
         <div className="col-lg-6">
           <div className="saleCard">
             <div className='row sale-row'>
+              <p className='saleDesc'>NFT Address: <span className="saleDescVal">{accBalanceAmount}</span></p>
+              <div className="input-group">
+                <div className="input-group-prepend">
+                  <span className="input-group-text">Mint Token ID</span>
+                </div>
+                <input type="number" step="1" min={1} max={10} className="form-control" placeholder="Enter Token ID" />
+              </div>
               <button onClick={mint} className="cta-button connect-wallet-button">
                 NFT MINT
               </button>
+            </div>
+            <div className='row sale-row'>
+              <div className="input-group">
+                <div className="input-group-prepend">
+                  <span className="input-group-text">Lisence Amount</span>
+                </div>
+                <input type="number" step="1" min={1} max={10} value={lisenceNumber} onChange={(e) => {setLisenceNumber(e.target.value)}} className="form-control" placeholder="Enter Amount" />
+              </div>
               <button onClick={purchaseLicense} className="cta-button connect-wallet-button">
-                PurchaseLicense
+                  PurchaseLicense
               </button>
             </div>
           </div>

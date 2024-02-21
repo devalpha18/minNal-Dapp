@@ -244,6 +244,24 @@
             "type": "event"
         },
         {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "to",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "NFTapprove",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
             "inputs": [],
             "name": "admin1",
             "outputs": [
@@ -267,24 +285,6 @@
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "to",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "tokenId",
-                    "type": "uint256"
-                }
-            ],
-            "name": "approve",
-            "outputs": [],
-            "stateMutability": "nonpayable",
             "type": "function"
         },
         {
@@ -365,11 +365,6 @@
         {
             "inputs": [
                 {
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                },
-                {
                     "internalType": "string",
                     "name": "tokenURI",
                     "type": "string"
@@ -443,7 +438,7 @@
             "outputs": [
                 {
                     "internalType": "bool",
-                    "name": "sucess",
+                    "name": "",
                     "type": "bool"
                 }
             ],
