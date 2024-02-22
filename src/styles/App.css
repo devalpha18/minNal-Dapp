@@ -15,6 +15,9 @@
 }
 
 .app-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
   padding-top: 3rem;
 }
 
@@ -49,6 +52,9 @@
 }
 
 .saleCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   color: white;
   border-radius: 1rem;
   background: -webkit-linear-gradient(right, #2d6827 0%, #194f67 60%) ;
@@ -122,6 +128,21 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.nftcard{
+  display: flex;
+  align-items: center;
+  overflow-x: scroll;
+  gap: 20px;
+}
+
+.nftcarousel{
+  width: 50%;
+  @media screen and (max-width: 992px) {
+    width: 100%;
+  }
+
 }
 
 .input-group {

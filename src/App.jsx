@@ -9,7 +9,7 @@ import NFT_Abi from './assets/NDL.json'
 // Constants
 const ICO_ADDRESS = '0x30E0dA327A67B7cace39b846E21417EF379F1d9a';
 const TOKEN_ADDRESS = "0x0c7Bb185696eC8aF91538b893852B06248BDe9aF";
-const NFT_ADDRESS = '0x326253cAc1c07ecBcD43d2B31751C0C25ad2202e';
+const NFT_ADDRESS = '0x621c7219a1E090703F1fE0BB1cace9bc8b82493e';
 
 const Footer = () => {
   return (
@@ -27,7 +27,11 @@ const App = () => {
   const [icoContract, setICOContract] = useState();
   const [NFTContract, setNFTContract] = useState();
   const [gasPrice, setGasprice] = useState();
-  const [ETCPrice, setETCPrice] = useState()
+  const [ETCPrice, setETCPrice] = useState();
+  const [currentMintId, setCurrentMintId] = useState();
+  const [currentBuyId, setCurrentBuyId] = useState()
+  const [initialNFT, setInitialNFT] = useState()
+  const [currentAccount, setCurrentAccount] = useState("");
   
   useEffect(() => {
     const coingeckoApiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum-classic&vs_currencies=usd';
@@ -55,9 +59,40 @@ const App = () => {
     setNFTContract(NFT);
     checkIfWalletIsConnected();
     getBalance();
+    getMintId();
+    getBuyId();
   }, [])
 
-  const [currentAccount, setCurrentAccount] = useState("");
+  useEffect(() => {
+    getInitialNFTData()
+  }, [NFTContract])
+
+  useEffect(() => {
+    console.log("currentMintId,currentBuyId", currentMintId,currentBuyId)
+  }, [currentMintId,currentBuyId])
+
+  const getInitialNFTData = async () => {
+    const balanceNFT = await NFTContract.balanceOf(NFT_ADDRESS);
+    console.log("balanceNFT", balanceNFT.toString())
+    let tokenUris = [];
+    for(let i = 0; i < balanceNFT; i++){
+      tokenUris[i] = await NFTContract.tokenURI(i);
+    }
+    setInitialNFT(tokenUris)
+    console.log("tokenUris", tokenUris)
+  }
+  const getMintId = async () => {
+    const mindId = await NFTContract.getMintId();
+    setCurrentMintId(mindId.toString())
+    console.log("mindId", mindId.toString())
+  }
+
+  const getBuyId = async () => {
+    const buyId = await NFTContract.getBuyId()
+    setCurrentBuyId(buyId.toString())
+    console.log("buyId", buyId.toString())
+  }
+
   const checkIfWalletIsConnected = async () => {
     const { ethereum } = window;
     const setEthereumObj = () => {
@@ -267,7 +302,7 @@ const App = () => {
       (currentAccount === "") ? (
         ""
       ) : (
-        <div className="col-lg-6">
+        <div className="col-lg-5">
           <div className="saleCard">
             <div className='row sale-row'>
               <p className='saleDesc'>Account Balance: <span className="saleDescVal">{accBalanceAmount}</span></p>
@@ -284,16 +319,11 @@ const App = () => {
   }
 
   const SaleNFT = () => {
-    const [lisenceNumber, setLisenceNumber] = useState()
-    const mint = async () => {
-      const tokenURI = "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmY5DeDf9dyFokXuX7kjgrC1WkKDeTLEEf3U7eCYw1DLjW/1.jpg"
-      const tx = await NFTContract.mint(tokenURI)
-      console.log(tx)
-    }
-
+    const [purchaseAmount, setPurchaseAmount] = useState()
+    const [mintAmount, setMintAmount] = useState()
     const getETCAmont  = () => {
       const tokenPrice = 0.2;
-      const lisencePrice = lisenceNumber != 10 ? 150 * lisenceNumber : 1350;
+      const lisencePrice = purchaseAmount != 10 ? 150 * purchaseAmount : 1350;
       const lisenceETCAll = lisencePrice / ETCPrice;
       const lisenceETC = (( lisencePrice / 10 ) * 7) / ETCPrice;
       const lisenceToken = ((( lisencePrice / 10 ) * 3) / ETCPrice) /  tokenPrice;
@@ -305,23 +335,43 @@ const App = () => {
       return data;
     }
 
+    const mint = async () => {
+      const tokenbaseURI = "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmXknt9KKKFTqkwqUnnM3RTrsRhvwKXXRNKAXwDWbBeLSR/";
+      const options = {
+        gasLimit: ethers.utils.parseUnits((500000 * mintAmount).toString(), 0),
+      }
+      console.log("options", options)
+      const NFTContractMint = await NFTContract.mint(mintAmount, tokenbaseURI, options);
+      const NFTContractTx = await NFTContractMint.wait();
+      console.log("await NFTContractTx.wait()", NFTContractTx)
+      if(NFTContractTx.status == 1) {
+        getMintId();
+        getInitialNFTData()
+      }
+      setMintAmount("")
+    }
+
     const purchaseLicense = async () => {
-      setLisenceNumber("")
+      setPurchaseAmount("")
       const prices = getETCAmont()
-      console.log("prices.lisenceETC", prices.lisenceETC, "prices.lisenceToken", prices.lisenceToken)
+      console.log("prices", prices)
       const tokenAmountInEther = ethers.utils.parseEther(prices.lisenceETCAll.toString());
       const options = {
         value: tokenAmountInEther,
         gasPrice,
-        gasLimit: ethers.utils.parseUnits("200000", 0),
+        gasLimit: ethers.utils.parseUnits((300000 * purchaseAmount).toString(), 0),
       }
       const approveValue = await tokenContract.approve(NFT_ADDRESS, ethers.utils.parseEther(prices.lisenceToken.toString()))
       const approveValueTx = await approveValue.wait();
-      console.log("approveValueTx", approveValueTx)
+
       if(approveValueTx.status == 1){
-        const tx = await NFTContract.purchaseLicense("0", options)
-        const result = await tx.wait()
-        console.log("result", result)
+          const purchaseValue = await NFTContract.purchaseLicense(purchaseAmount, options)
+          const purchaseValueTx = await purchaseValue.wait()
+          if(purchaseValueTx.status == 1){
+            getBuyId()
+            getInitialNFTData()
+            console.log("result", purchaseValueTx)
+          }
       }
     }
 
@@ -329,15 +379,15 @@ const App = () => {
       (currentAccount === "") ? (
         ""
       ) : (
-        <div className="col-lg-6">
+        <div className="col-lg-5">
           <div className="saleCard">
+            <p className='saleDesc'>NFT Address: <span className="saleDescVal">{accBalanceAmount}</span></p>
             <div className='row sale-row'>
-              <p className='saleDesc'>NFT Address: <span className="saleDescVal">{accBalanceAmount}</span></p>
               <div className="input-group">
                 <div className="input-group-prepend">
-                  <span className="input-group-text">Mint Token ID</span>
+                  <span className="input-group-text">Mint Amount</span>
                 </div>
-                <input type="number" step="1" min={1} max={10} className="form-control" placeholder="Enter Token ID" />
+                <input type="number" value={mintAmount} onChange={(e) => {setMintAmount(e.target.value)}} step="1" min={1} max={10} className="form-control" placeholder="Enter amount to mint" />
               </div>
               <button onClick={mint} className="cta-button connect-wallet-button">
                 NFT MINT
@@ -348,7 +398,7 @@ const App = () => {
                 <div className="input-group-prepend">
                   <span className="input-group-text">Lisence Amount</span>
                 </div>
-                <input type="number" step="1" min={1} max={10} value={lisenceNumber} onChange={(e) => {setLisenceNumber(e.target.value)}} className="form-control" placeholder="Enter Amount" />
+                <input type="number" step="1" min={1} max={10} value={purchaseAmount} onChange={(e) => {setPurchaseAmount(e.target.value)}} className="form-control" placeholder="Enter amount to purchase" />
               </div>
               <button onClick={purchaseLicense} className="cta-button connect-wallet-button">
                   PurchaseLicense
@@ -358,6 +408,48 @@ const App = () => {
         </div>
       )
     );
+  }
+
+  const NFTView = () => {
+    console.log(initialNFT)
+    return(
+    <div id="carouselExampleDark" className="carousel slide nftcarousel" data-ride="carousel">
+      <div class="carousel-indicators">
+        {
+          initialNFT && initialNFT.map((v, i) => {
+            return <button type="button" data-bs-target="#carouselExampleDark" data-bs-slide-to={i} class="active" aria-current="true" aria-label={`Slide ${i + 1}`}></button>
+          })
+        }
+      </div>
+      <div className="carousel-inner">
+        {
+           initialNFT && initialNFT.map((v, i) => {
+               return (
+                <div className={`carousel-item${i == 0 ? " active": ""}`} ><img src={v} className="w-25" width={200} height={200} alt={i}/></div>
+               )
+               
+             }
+           )
+        }
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleDark" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleDark" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </div>
+      // <div className="col-lg-5 nftcard">
+      //   {
+      //     initialNFT && initialNFT.map((v, i) => {
+      //         return <img src={v} width={200} height={200}/>
+      //       }
+      //     )
+      //   }
+      // </div>
+    )
   }
 
   return (
@@ -372,7 +464,7 @@ const App = () => {
       </nav>
 
       <div className="row app-row app-container">
-        <div className="col-lg-6">
+        <div className="col-lg-5">
           <p className="sub-text">
             Buy TestToken Now, To Get Rich In The Future.
           </p>
@@ -384,6 +476,7 @@ const App = () => {
         </div>
 
         {SaleCard()}
+        {NFTView()}
         {SaleNFT()}
 
       </div>
