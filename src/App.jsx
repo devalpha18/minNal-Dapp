@@ -18,7 +18,7 @@ import NFT_Abi from "./assets/NDL.json";
 // Constants
 const ICO_ADDRESS = "0x30E0dA327A67B7cace39b846E21417EF379F1d9a";
 const TOKEN_ADDRESS = "0x7c73F54BDf20F13b037FF1A812D0B30429BEe705";
-const NFT_ADDRESS = "0x88F4707390349dEC7F08852D85F4d9d906f3E1F5";
+const NFT_ADDRESS = "0x1Dd71Cdd9481E96f53a6E644c5c4dBDEb435519c";
 
 const Footer = () => {
   return (
@@ -43,8 +43,11 @@ const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
   const [lpAmount, setLpAmount] = useState({ etc: 0, navi: 0 });
   const [products, setProduct] = useState();
-  const [lpState, setLpState] = useState({ etc: false, navi: false });
-  const [state, setState] = useState(false);
+  const [lpState, setLpState] = useState({
+    etc: false,
+    navi: false,
+    state: false,
+  });
   const [open, setOpen] = useState(false);
   const [payAmount, setPayAmount] = useState({ etc: 0, navi: 0 });
 
@@ -77,8 +80,7 @@ const App = () => {
     setNFTContract(NFT);
     checkIfWalletIsConnected();
     getBalance();
-    getMintId();
-    getBuyId();
+    getLP();
   }, []);
 
   useEffect(() => {
@@ -116,13 +118,6 @@ const App = () => {
       tokenUris[i] = await NFTContract.tokenURI(i);
     }
     setInitialNFT(tokenUris);
-  };
-
-  const getMintId = async () => {
-    NFTContract &&
-      NFTContract.getMintId().then((res) => {
-        setCurrentMintId(res.toString());
-      });
   };
 
   const getBuyId = async () => {
@@ -392,7 +387,6 @@ const App = () => {
   };
 
   const SaleNFT = () => {
-    const [purchaseAmount, setPurchaseAmount] = useState();
     const [mintAmount, setMintAmount] = useState("");
 
     const mint = async () => {
@@ -411,7 +405,6 @@ const App = () => {
 
       const NFTContractTx = await NFTContractMint.wait();
       if (NFTContractTx.status == 1) {
-        getMintId();
         getInitialNFTData();
       }
       setMintAmount("");
@@ -435,7 +428,7 @@ const App = () => {
                 }}
                 step="1"
                 min={1}
-                max={10}
+                max={30}
                 className="form-control"
                 placeholder="Enter amount to mint"
               />
@@ -537,15 +530,26 @@ const App = () => {
   };
 
   const validateETC = async (option) => {
-    await getLP();
+    const provider = new ethers.providers.Web3Provider(ethereum);
+    const balanceETC = await provider.getBalance(
+      window.ethereum.selectedAddress
+    );
+    const balanceNavi = await tokenContract.balanceOf(
+      window.ethereum.selectedAddress
+    );
+
+    const balanceInEth = ethers.utils.formatUnits(balanceETC, 18).toString();
+    const balanceNaviInt = ethers.utils.formatEther(balanceNavi, 18).toString();
     const product = option ? products[0] : products[1];
     const product_ETC = Number(product.priceETC.toString());
     const product_Navi = Number(product.priceNavi.toString());
+
     await setLpState((old) => {
       return {
         ...old,
-        etc: product_ETC < Number(lpAmount.etc) ? true : false,
-        navi: product_Navi < Number(lpAmount.navi) ? true : false,
+        etc: product_ETC < Number(balanceInEth) ? true : false,
+        navi: product_Navi < Number(balanceNaviInt) ? true : false,
+        state: true,
       };
     });
 
@@ -557,8 +561,8 @@ const App = () => {
       };
     });
     if (
-      product_ETC < Number(lpAmount.etc) &&
-      product_Navi < Number(lpAmount.navi)
+      product_ETC < Number(balanceInEth) &&
+      product_Navi < Number(balanceNaviInt)
     )
       return true;
     else return false;
@@ -573,7 +577,6 @@ const App = () => {
     const product = type ? products[0] : products[1];
     const lisenceETC = product.priceETC;
     const lisenceToken = product.priceNavi;
-    console.log("type", products);
     const data = {
       lisenceETCAll,
       lisenceETC,
@@ -583,7 +586,6 @@ const App = () => {
   };
 
   const purchaseLicense = async (type) => {
-    setState(true);
     const prices = getETCAmont(type);
     const product = type ? products[0] : products[1];
     const amount = type ? 1 : 10;
@@ -597,7 +599,7 @@ const App = () => {
     const options = {
       value: tokenAmountInEther,
       gasPrice,
-      gasLimit: ethers.utils.parseUnits((50000 * amount).toString(), 0),
+      gasLimit: ethers.utils.parseUnits((500000 * amount).toString(), 0),
     };
     const approveValue = await tokenContract.approve(
       NFT_ADDRESS,
@@ -609,14 +611,18 @@ const App = () => {
 
       const approveValueTx = await approveValue.wait();
       if (approveValueTx.status == 1) {
-        setState(false);
+        setLpState((old) => {
+          return {
+            ...old,
+            state: false,
+          };
+        });
         const purchaseValue = await NFTContract.purchaseLicense(
           amount,
           tokenAmountInNavi,
           options
         );
         const purchaseValueTx = await purchaseValue.wait();
-        console.log("purchaseValueTx", purchaseValueTx);
 
         const postDataETC = {
           ApiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
@@ -640,10 +646,8 @@ const App = () => {
 
         if (purchaseValueTx.status == 1) {
           const rsSaveNodeETC = await saveTransaction(urltx, postDataETC);
-          console.log("rsSaveNodeETC", rsSaveNodeETC);
           if (rsSaveNodeETC) {
             const rsSaveNodeNavi = await saveTransaction(urltx, postDataNavi);
-            console.log("rsSaveNodeNavi", rsSaveNodeNavi);
             if (rsSaveNodeNavi) {
               const rsSaveTransaction = await saveTransaction(
                 urlNode,
@@ -657,7 +661,6 @@ const App = () => {
         }
       }
     } catch (error) {
-      setState(true);
       console.error("Error occurred:", error);
     }
   };
@@ -686,13 +689,10 @@ const App = () => {
 
   const buyLicense = async (type) => {
     const flag = await validateETC(type);
-    console.log("flag", flag);
     if (flag) {
-      await setState(true);
       await purchaseLicense(type);
       return;
     } else {
-      await setState(true);
       return;
     }
   };
@@ -723,10 +723,28 @@ const App = () => {
         {SaleNFT()}
         {
           <>
-            <Drawer anchor={"top"} open={state} onClose={() => setState(false)}>
+            <Drawer
+              anchor={"top"}
+              open={lpState.state}
+              onClose={() =>
+                setLpState((old) => {
+                  return {
+                    ...old,
+                    state: false,
+                  };
+                })
+              }
+            >
               <Box
                 role="presentation"
-                onKeyDown={() => setState(false)}
+                onKeyDown={() =>
+                  setLpState((old) => {
+                    return {
+                      ...old,
+                      state: false,
+                    };
+                  })
+                }
                 sx={{
                   p: 3,
                   display: "flex",
@@ -775,7 +793,14 @@ const App = () => {
                   variant="outlined"
                   size="lg"
                   color="danger"
-                  onClick={() => setState(false)}
+                  onClick={() =>
+                    setLpState((old) => {
+                      return {
+                        ...old,
+                        state: false,
+                      };
+                    })
+                  }
                 >
                   Close
                 </Button>
