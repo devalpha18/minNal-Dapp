@@ -625,7 +625,7 @@ abstract contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Er
     }
 
     function _baseURI() internal view virtual returns (string memory) {
-        return "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmY5DeDf9dyFokXuX7kjgrC1WkKDeTLEEf3U7eCYw1DLjW/";
+        return "";
     }
 
     function NFTapprove(address to, uint256 tokenId) public virtual {
@@ -870,7 +870,8 @@ contract NFTLicense is ERC721URIStorage, ReentrancyGuard{
     address public lpaddress = 0xa6fD66670D36884fC8CBB4CF8F06e4687890Aede;
     IERC20 public newToken;
     uint256 public tokenPrice = 0.2 ether;
-    uint256 private _nextTokenId;
+    uint256 private _nextTokenId = 0;
+    uint256 private buyTokenId = 0;
 
     constructor() ERC721("NFTLicense", "NFTL") {
         address _newToken = 0x0c7Bb185696eC8aF91538b893852B06248BDe9aF;
@@ -883,9 +884,8 @@ contract NFTLicense is ERC721URIStorage, ReentrancyGuard{
         _;  
     }
 
-    event Mint(address indexed _to, uint256 _tokenId, string _tokenURI);
-
-    function purchaseLicense(uint256 tokenId) public payable nonReentrant returns (bool) {
+    function purchaseLicense(uint256 amount) public payable nonReentrant returns (uint256) {
+        uint256 paidNum = 0;
         uint256 totalAmount = (msg.value.div(10).mul(3)).div(tokenPrice).mul(1 ether);
         require(newToken.balanceOf(msg.sender) >= totalAmount, "Insufficient Test Token balance");
         payable(admin1).transfer(msg.value.div(10).mul(2));
@@ -893,16 +893,31 @@ contract NFTLicense is ERC721URIStorage, ReentrancyGuard{
         payable(lpaddress).transfer((msg.value.div(10).mul(3)));
         payable(msg.sender).transfer(msg.value.div(10).mul(3));
         require(newToken.transferFrom(msg.sender, lpaddress, totalAmount), "Token transfer failed");
-        transferFrom(address(this), msg.sender, tokenId);
-        return true;
+        for(uint256 i = buyTokenId; i < buyTokenId + amount; i++){
+            _transfer(address(this), msg.sender, i);
+            paidNum++;
+        }
+        buyTokenId = paidNum;
+        return buyTokenId;
     }
 
-    function mint(string memory tokenURI) public returns (uint256) {
-        uint256 tokenId = _nextTokenId++;
-        for(uint256 i = 0;  i > tokenId; i++ ){
-            _mint(address(this), tokenId);
-            _setTokenURI(tokenId, tokenURI);
+    function mint(uint256 amount, string memory tokenbaseURI) public returns (uint256) {
+        uint256 tokenID = 0;
+        for(uint256 i = _nextTokenId;  i < _nextTokenId + amount; i++ ){
+            string memory MinttokenURI = string.concat(tokenbaseURI, Strings.toString(i + 1), ".jpg");
+            _mint(address(this), i);
+            _setTokenURI(i, MinttokenURI);
+            tokenID++;
         }
-        return tokenId;
+        _nextTokenId = tokenID;
+        return _nextTokenId;
+    }
+
+    function getMintId() public view returns (uint256){
+        return _nextTokenId;
+    }
+
+    function getBuyId() public view returns (uint256){
+        return buyTokenId;
     }
 }
