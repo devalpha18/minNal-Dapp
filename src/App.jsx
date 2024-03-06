@@ -37,11 +37,8 @@ const App = () => {
   const [NFTContract, setNFTContract] = useState();
   const [gasPrice, setGasprice] = useState();
   const [ETCPrice, setETCPrice] = useState();
-  const [currentMintId, setCurrentMintId] = useState();
-  const [currentBuyId, setCurrentBuyId] = useState();
   const [initialNFT, setInitialNFT] = useState();
   const [currentAccount, setCurrentAccount] = useState("");
-  const [lpAmount, setLpAmount] = useState({ etc: 0, navi: 0 });
   const [products, setProduct] = useState();
   const [lpState, setLpState] = useState({
     etc: false,
@@ -80,27 +77,11 @@ const App = () => {
     setNFTContract(NFT);
     checkIfWalletIsConnected();
     getBalance();
-    getLP();
   }, []);
 
   useEffect(() => {
     getInitialNFTData();
   }, [NFTContract]);
-
-  const getLP = async () => {
-    const provider = new ethers.providers.Web3Provider(ethereum);
-    const balanceETC = await provider.getBalance(
-      window.ethereum.selectedAddress
-    );
-    const balanceInEth = ethers.utils.formatUnits(balanceETC, 18).toString();
-    const balanceNavi = await tokenContract.balanceOf(
-      window.ethereum.selectedAddress
-    );
-
-    const balanceNaviInt = ethers.utils.formatEther(balanceNavi, 18).toString();
-
-    await setLpAmount({ etc: balanceInEth, navi: balanceNaviInt });
-  };
 
   const getAllProducts = async () => {
     const products = await fetch(
@@ -118,13 +99,6 @@ const App = () => {
       tokenUris[i] = await NFTContract.tokenURI(i);
     }
     setInitialNFT(tokenUris);
-  };
-
-  const getBuyId = async () => {
-    NFTContract &&
-      NFTContract.getBuyId().then((res) => {
-        setCurrentBuyId(res.toString());
-      });
   };
 
   const checkIfWalletIsConnected = async () => {
@@ -656,7 +630,6 @@ const App = () => {
               rsSaveTransaction && setOpen(true);
             }
           }
-          getBuyId();
           getInitialNFTData();
         }
       }
