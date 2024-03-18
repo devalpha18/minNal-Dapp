@@ -430,7 +430,7 @@ abstract contract ReentrancyGuard {
 contract ICO is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
 
-    uint256 public tokenPrice = 0.015 ether;
+    uint256 public tokenPrice = 0.2 ether;
     uint256 public deployDate;
     IERC20 token;
 

@@ -219,21 +219,16 @@
       "type": "event"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
+      "inputs": [],
+      "name": "LicencePrice",
+      "outputs": [
         {
           "internalType": "uint256",
-          "name": "tokenId",
+          "name": "",
           "type": "uint256"
         }
       ],
-      "name": "NFTapprove",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -317,6 +312,29 @@
       "inputs": [],
       "name": "getMintId",
       "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
         {
           "internalType": "uint256",
           "name": "",
@@ -436,12 +454,36 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "ETCamount",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "priceStore",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "price",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "ETCAmount",
           "type": "uint256"
         },
         {
           "internalType": "uint256",
           "name": "NaviAmount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "NFTAmount",
           "type": "uint256"
         }
       ],
@@ -459,69 +501,39 @@
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
-        {
           "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "safeTransferFrom",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "tokenId",
+          "name": "price",
           "type": "uint256"
         },
         {
-          "internalType": "bytes",
-          "name": "data",
-          "type": "bytes"
-        }
-      ],
-      "name": "safeTransferFrom",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "operator",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "ETCPrice",
+          "type": "uint256"
         },
         {
-          "internalType": "bool",
-          "name": "approved",
-          "type": "bool"
+          "internalType": "uint256",
+          "name": "NaviPrice",
+          "type": "uint256"
         }
       ],
-      "name": "setApprovalForAll",
-      "outputs": [],
+      "name": "setPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
       "stateMutability": "nonpayable",
       "type": "function"
     },

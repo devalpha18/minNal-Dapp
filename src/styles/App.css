@@ -61,6 +61,13 @@
   padding: 1rem 1rem;
 }
 
+.salePriceState {
+  display: flex;
+  padding: 0;
+  gap: 10px;
+  flex-direction: column;
+}
+
 .SaleHeader {
   margin: 0;
   font-size: 1.5rem;
@@ -207,6 +214,20 @@
 .input-group-text {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+}
+
+.input-group-text-state {
+  flex: 1 1;
+  background-color: #fff;
+  color: #000;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group-prepend-state {
+  flex: 1 1;
+  display: flex;
 }
 
 .cta-button {

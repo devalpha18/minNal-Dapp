@@ -9,6 +9,7 @@ import Typography from "@mui/joy/Typography";
 import Sheet from "@mui/joy/Sheet";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CircularProgress from "@mui/material/CircularProgress";
 import "./styles/App.css";
 import twitterLogo from "./assets/twitter-logo.svg";
 import Token_Abi from "./assets/Token.json";
@@ -16,9 +17,9 @@ import ICO_Abi from "./assets/ICO.json";
 import NFT_Abi from "./assets/NDL.json";
 
 // Constants
-const ICO_ADDRESS = "0x30E0dA327A67B7cace39b846E21417EF379F1d9a";
+const ICO_ADDRESS = "0x887D518c63E164B83FE1793f50fd3e3520C7E9eb";
 const TOKEN_ADDRESS = "0x7c73F54BDf20F13b037FF1A812D0B30429BEe705";
-const NFT_ADDRESS = "0x1Dd71Cdd9481E96f53a6E644c5c4dBDEb435519c";
+const NFT_ADDRESS = "0x7E796689C897110cc267e59C90DA8801b10e3E7d";
 
 const Footer = () => {
   return (
@@ -39,14 +40,18 @@ const App = () => {
   const [ETCPrice, setETCPrice] = useState();
   const [initialNFT, setInitialNFT] = useState();
   const [currentAccount, setCurrentAccount] = useState("");
-  const [products, setProduct] = useState();
   const [lpState, setLpState] = useState({
     etc: false,
     navi: false,
     state: false,
   });
+  const [purchaseType, setPurchaseType] = useState(true);
   const [open, setOpen] = useState(false);
   const [payAmount, setPayAmount] = useState({ etc: 0, navi: 0 });
+  const [mintAmount, setMintAmount] = useState("");
+  const [nftPrice, setNftPrice] = useState({ Price: 0, ETC: 0, Navi: 0 });
+  const [usdValue, setUsdValue] = useState();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const coingeckoApiUrl =
@@ -63,7 +68,6 @@ const App = () => {
           console.error("Error fetching ETC price:", error);
         })
     );
-    getAllProducts();
     const provider = new ethers.providers.Web3Provider(ethereum);
     const signer = provider.getSigner();
     provider.getGasPrice().then((res) => {
@@ -83,14 +87,6 @@ const App = () => {
     getInitialNFTData();
   }, [NFTContract]);
 
-  const getAllProducts = async () => {
-    const products = await fetch(
-      "https://api.minnal.dk/pandora/getallproducts?ApiKey=5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ=="
-    );
-    const rsProduct = await products.json();
-    rsProduct[0] && setProduct(rsProduct);
-  };
-
   const getInitialNFTData = async () => {
     const balanceNFT =
       NFTContract && (await NFTContract.balanceOf(NFT_ADDRESS));
@@ -98,6 +94,13 @@ const App = () => {
     for (let i = 0; i < balanceNFT; i++) {
       tokenUris[i] = await NFTContract.tokenURI(i);
     }
+    const price = await NFTContract.getPrice();
+    setNftPrice({
+      Price: price[0].toString() / 10 ** 18,
+      ETC: price[1].toString() / 10 ** 18,
+      Navi: price[2].toString() / 10 ** 18,
+    });
+    setLoading(true);
     setInitialNFT(tokenUris);
   };
 
@@ -361,11 +364,9 @@ const App = () => {
   };
 
   const SaleNFT = () => {
-    const [mintAmount, setMintAmount] = useState("");
-
     const mint = async () => {
       const tokenbaseURI =
-        "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmU1F8unDrzTNZr3Gz6F911j7iLuU7hxcZKMqaYMKayH5V/";
+        "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmamgBXfdt7hRGomvV33Tg3z6TNgmcf6TsRnvamEyWQJmJ/";
 
       const options = {
         gasLimit: ethers.utils.parseUnits((500000 * mintAmount).toString(), 0),
@@ -384,6 +385,22 @@ const App = () => {
       setMintAmount("");
     };
 
+    const calcPrice = async (price) => {
+      const adminAmountETC = ((price * 0.7) / ETCPrice).toFixed(2);
+      const adminAmountNavi = (((price * 0.3) / ETCPrice) * 5).toFixed(2);
+      setNftPrice({ Price: price, ETC: adminAmountETC, Navi: adminAmountNavi });
+    };
+
+    const handelSetPrice = async () => {
+      calcPrice(usdValue);
+      const fixedPrice = await NFTContract.setPrice(
+        ethers.utils.parseEther(usdValue.toString()),
+        ethers.utils.parseEther(nftPrice.ETC.toString()),
+        ethers.utils.parseEther(nftPrice.Navi.toString())
+      );
+      const fixedPriceRs = await fixedPrice.wait();
+    };
+
     return currentAccount === "" ? (
       ""
     ) : (
@@ -392,11 +409,42 @@ const App = () => {
           <div className="row sale-row">
             <div className="input-group">
               <div className="input-group-prepend">
+                <span className="input-group-text">NFT Price</span>
+              </div>
+              <input
+                type="number"
+                className="form-control"
+                placeholder="Enter NFT Price(USD)"
+                value={usdValue}
+                onChange={(e) => setUsdValue(e.target.value)}
+              />
+            </div>
+            <div className="salePriceState">
+              <div className="input-group-prepend-state">
+                <p className="input-group-text-state">
+                  <span>ETC Price</span>
+                  <span>{nftPrice.ETC}</span>
+                </p>
+                <p className="input-group-text-state">
+                  <span>Navi Price</span>
+                  <span>{nftPrice.Navi}</span>
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handelSetPrice}
+              className="cta-button connect-wallet-button"
+            >
+              Set Price
+            </button>
+          </div>
+          <div className="row sale-row">
+            <div className="input-group">
+              <div className="input-group-prepend">
                 <span className="input-group-text">Mint Amount</span>
               </div>
               <input
                 type="number"
-                value={mintAmount}
                 onChange={(e) => {
                   setMintAmount(e.target.value);
                 }}
@@ -514,9 +562,12 @@ const App = () => {
 
     const balanceInEth = ethers.utils.formatUnits(balanceETC, 18).toString();
     const balanceNaviInt = ethers.utils.formatEther(balanceNavi, 18).toString();
-    const product = option ? products[0] : products[1];
-    const product_ETC = Number(product.priceETC.toString());
-    const product_Navi = Number(product.priceNavi.toString());
+    const product_ETC = option
+      ? Number(nftPrice.ETC.toString())
+      : Number((nftPrice.ETC * 9).toString());
+    const product_Navi = option
+      ? Number(nftPrice.Navi.toString())
+      : Number((nftPrice.Navi * 9).toString());
 
     await setLpState((old) => {
       return {
@@ -543,25 +594,19 @@ const App = () => {
   };
 
   const getETCAmont = (type) => {
-    const tokenPrice = 0.2;
-    const lisencePrice = type ? 150 : 1350;
-    const lisenceETCAll = lisencePrice / ETCPrice;
-    // const lisenceETC = ((lisencePrice / 10) * 7) / ETCPrice;
-    // const lisenceToken = ((lisencePrice / 10) * 3) / ETCPrice / tokenPrice;
-    const product = type ? products[0] : products[1];
-    const lisenceETC = product.priceETC;
-    const lisenceToken = product.priceNavi;
+    const AllPrice = type ? nftPrice.Price : nftPrice.Price * 9;
+    const lisenceETC = type ? nftPrice.ETC : nftPrice.ETC * 9;
+    const lisenceToken = type ? nftPrice.Navi : nftPrice.Navi * 9;
     const data = {
-      lisenceETCAll,
-      lisenceETC,
-      lisenceToken,
+      AllPrice: AllPrice,
+      lisenceETC: lisenceETC,
+      lisenceToken: lisenceToken,
     };
     return data;
   };
 
   const purchaseLicense = async (type) => {
     const prices = getETCAmont(type);
-    const product = type ? products[0] : products[1];
     const amount = type ? 1 : 10;
     const tokenAmountInEther = ethers.utils.parseEther(
       prices.lisenceETC.toString()
@@ -592,30 +637,25 @@ const App = () => {
           };
         });
         const purchaseValue = await NFTContract.purchaseLicense(
-          amount,
-          tokenAmountInNavi,
+          amount.toString(),
           options
         );
         const purchaseValueTx = await purchaseValue.wait();
 
         const postDataETC = {
-          ApiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
-          WalletAddress: window.ethereum.selectedAddress,
-          Hash: purchaseValueTx.blockHash,
-          PriceUSD: product.priceUSD,
-          PriceETC: product.priceETC,
-        };
-        const postDataNavi = {
-          ApiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
-          WalletAddress: window.ethereum.selectedAddress,
-          Hash: purchaseValueTx.blockHash,
-          PriceUSD: product.priceUSD,
-          PriceNavi: product.priceNavi,
+          apiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
+          licenseAmount: amount,
+          walletAddress: window.ethereum.selectedAddress,
+          transactionHash: purchaseValueTx.blockHash,
+          priceUSD: prices.AllPrice.toString(),
+          priceETC: prices.lisenceETC.toString(),
+          priceNavi: prices.lisenceToken.toString(),
         };
         const postDataNode = {
-          ApiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
-          WalletAddress: window.ethereum.selectedAddress,
-          ProductId: product.productId,
+          apiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
+          walletAddress: window.ethereum.selectedAddress,
+          licenseAmount: product.productId,
+          transactionEtcHash: purchaseValueTx.blockHash,
         };
 
         if (purchaseValueTx.status == 1) {
@@ -661,6 +701,7 @@ const App = () => {
   };
 
   const buyLicense = async (type) => {
+    setPurchaseType(type);
     const flag = await validateETC(type);
     if (flag) {
       await purchaseLicense(type);
@@ -690,10 +731,18 @@ const App = () => {
             and you can learn here about this crypto
           </p>
         </div>
+        {loading ? (
+          <>
+            {SaleCard()}
+            {currentAccount ? <NFTView /> : null}
+            {SaleNFT()}
+          </>
+        ) : (
+          <div>
+            <CircularProgress />
+          </div>
+        )}
 
-        {SaleCard()}
-        {currentAccount ? NFTView() : ""}
-        {SaleNFT()}
         {
           <>
             <Drawer
@@ -733,7 +782,11 @@ const App = () => {
                 <Divider />
                 <div>
                   <p style={{ fontSize: "14px" }}>
-                    {`You will have to pay ${payAmount.etc}$USD (in $ETC) and ${payAmount.navi}$USD (in $Navi) using
+                    {`You will have to pay ${payAmount.etc}$USD (in ${
+                      getETCAmont(purchaseType).lisenceETC
+                    }$ETC) and ${payAmount.navi}$USD (in ${
+                      getETCAmont(purchaseType).lisenceToken
+                    }$Navi) using
                       your wallet. If you see an error, please contact us right
                       away, and don't try to pay again`}
                   </p>
@@ -746,7 +799,9 @@ const App = () => {
                         {lpState.etc ? <CheckCircleIcon /> : <CancelIcon />}
                       </span>
                     </div>
-                    <div className="popup_content_tick">{`$ETC Payment ${payAmount.etc}$ USD`}</div>
+                    <div className="popup_content_tick">{`$${
+                      getETCAmont(purchaseType).lisenceETC
+                    }ETC Payment ${payAmount.etc}$ USD`}</div>
                   </div>
                   <Divider
                     orientation={"vertical"}
@@ -759,7 +814,9 @@ const App = () => {
                         {lpState.navi ? <CheckCircleIcon /> : <CancelIcon />}
                       </span>
                     </div>
-                    <div className="popup_content_tick">{`$Navi Payment ${payAmount.navi}$ USD`}</div>
+                    <div className="popup_content_tick">{`$${
+                      getETCAmont(purchaseType).lisenceToken
+                    }Navi Payment ${payAmount.navi}$ USD`}</div>
                   </div>
                 </div>
                 <Button
