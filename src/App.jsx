@@ -95,6 +95,11 @@ const App = () => {
       tokenUris[i] = await NFTContract.tokenURI(i);
     }
     const price = await NFTContract.getPrice();
+    console.log(
+      price[0].toString() / 10 ** 18,
+      price[1].toString() / 10 ** 18,
+      price[2].toString() / 10 ** 18
+    );
     setNftPrice({
       Price: price[0].toString() / 10 ** 18,
       ETC: price[1].toString() / 10 ** 18,
@@ -392,13 +397,12 @@ const App = () => {
     };
 
     const handelSetPrice = async () => {
-      calcPrice(usdValue);
       const fixedPrice = await NFTContract.setPrice(
-        ethers.utils.parseEther(usdValue.toString()),
+        ethers.utils.parseEther(nftPrice.Price.toString()),
         ethers.utils.parseEther(nftPrice.ETC.toString()),
         ethers.utils.parseEther(nftPrice.Navi.toString())
       );
-      const fixedPriceRs = await fixedPrice.wait();
+      await fixedPrice.wait();
     };
 
     return currentAccount === "" ? (
@@ -416,7 +420,9 @@ const App = () => {
                 className="form-control"
                 placeholder="Enter NFT Price(USD)"
                 value={usdValue}
-                onChange={(e) => setUsdValue(e.target.value)}
+                onChange={(e) => {
+                  setUsdValue(e.target.value), calcPrice(e.target.value);
+                }}
               />
             </div>
             <div className="salePriceState">
@@ -646,7 +652,7 @@ const App = () => {
           apiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
           licenseAmount: amount,
           walletAddress: window.ethereum.selectedAddress,
-          transactionHash: purchaseValueTx.blockHash,
+          transactionHash: purchaseValueTx.transactionHash,
           priceUSD: prices.AllPrice.toString(),
           priceETC: prices.lisenceETC.toString(),
           priceNavi: prices.lisenceToken.toString(),
@@ -654,21 +660,18 @@ const App = () => {
         const postDataNode = {
           apiKey: "5bFtYb3yDWnWJYYfEvQZgxEDpe2MMKzLk7kPeQ==",
           walletAddress: window.ethereum.selectedAddress,
-          licenseAmount: product.productId,
-          transactionEtcHash: purchaseValueTx.blockHash,
+          licenseAmount: amount,
+          transactionHash: purchaseValueTx.transactionHash,
         };
 
         if (purchaseValueTx.status == 1) {
           const rsSaveNodeETC = await saveTransaction(urltx, postDataETC);
           if (rsSaveNodeETC) {
-            const rsSaveNodeNavi = await saveTransaction(urltx, postDataNavi);
-            if (rsSaveNodeNavi) {
-              const rsSaveTransaction = await saveTransaction(
-                urlNode,
-                postDataNode
-              );
-              rsSaveTransaction && setOpen(true);
-            }
+            const rsSaveTransaction = await saveTransaction(
+              urlNode,
+              postDataNode
+            );
+            rsSaveTransaction && setOpen(true);
           }
           getInitialNFTData();
         }
@@ -731,12 +734,10 @@ const App = () => {
             and you can learn here about this crypto
           </p>
         </div>
+        {SaleCard()}
+        {currentAccount ? <NFTView /> : null}
         {loading ? (
-          <>
-            {SaleCard()}
-            {currentAccount ? <NFTView /> : null}
-            {SaleNFT()}
-          </>
+          SaleNFT()
         ) : (
           <div>
             <CircularProgress />
