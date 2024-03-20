@@ -94,18 +94,16 @@ const App = () => {
     for (let i = 0; i < balanceNFT; i++) {
       tokenUris[i] = await NFTContract.tokenURI(i);
     }
-    const price = await NFTContract.getPrice();
-    console.log(
-      price[0].toString() / 10 ** 18,
-      price[1].toString() / 10 ** 18,
-      price[2].toString() / 10 ** 18
-    );
-    setNftPrice({
-      Price: price[0].toString() / 10 ** 18,
-      ETC: price[1].toString() / 10 ** 18,
-      Navi: price[2].toString() / 10 ** 18,
-    });
-    setLoading(true);
+    NFTContract &&
+      NFTContract.getPrice().then((res) => {
+        setNftPrice({
+          Price: res[0].toString() / 10 ** 18,
+          ETC: res[1].toString() / 10 ** 18,
+          Navi: res[2].toString() / 10 ** 18,
+        });
+        setLoading(true);
+      });
+
     setInitialNFT(tokenUris);
   };
 
