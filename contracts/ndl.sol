@@ -813,20 +813,6 @@ abstract contract ERC721 is
         return _operatorApprovals[owner][operator];
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public virtual {
-        if (to == address(0)) {
-            revert ERC721InvalidReceiver(address(0));
-        }
-        address previousOwner = _update(to, tokenId, _msgSender());
-        if (previousOwner != from) {
-            revert ERC721IncorrectOwner(from, tokenId, previousOwner);
-        }
-    }
-
     function _ownerOf(uint256 tokenId) internal view virtual returns (address) {
         return _owners[tokenId];
     }

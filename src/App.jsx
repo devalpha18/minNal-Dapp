@@ -19,7 +19,7 @@ import NFT_Abi from "./assets/NDL.json";
 // Constants
 const ICO_ADDRESS = "0x887D518c63E164B83FE1793f50fd3e3520C7E9eb";
 const TOKEN_ADDRESS = "0x7c73F54BDf20F13b037FF1A812D0B30429BEe705";
-const NFT_ADDRESS = "0x7E796689C897110cc267e59C90DA8801b10e3E7d";
+const NFT_ADDRESS = "0x9330A3873DBebBfBcB862E06c6eE9F4fC05D0A47";
 
 const Footer = () => {
   return (
@@ -126,7 +126,7 @@ const App = () => {
       console.log("Make sure you have metamask");
       return;
     } else {
-      console.log("We have a ethereum object", ethereum);
+      console.log("We have a ethereum object");
     }
 
     const accounts = await ethereum.request({ method: "eth_accounts" });
@@ -372,7 +372,7 @@ const App = () => {
         "https://white-progressive-moose-640.mypinata.cloud/ipfs/QmamgBXfdt7hRGomvV33Tg3z6TNgmcf6TsRnvamEyWQJmJ/";
 
       const options = {
-        gasLimit: ethers.utils.parseUnits((500000 * mintAmount).toString(), 0),
+        gasLimit: ethers.utils.parseUnits((200000 * mintAmount).toString(), 0),
       };
 
       const NFTContractMint = await NFTContract.mint(
@@ -385,7 +385,7 @@ const App = () => {
       if (NFTContractTx.status == 1) {
         getInitialNFTData();
       }
-      setMintAmount("");
+      setMintAmount(null);
     };
 
     const calcPrice = async (price) => {
@@ -417,9 +417,10 @@ const App = () => {
                 type="number"
                 className="form-control"
                 placeholder="Enter NFT Price(USD)"
-                value={usdValue}
+                value={usdValue || ""}
                 onChange={(e) => {
                   setUsdValue(e.target.value), calcPrice(e.target.value);
+                  setUsdValue("");
                 }}
               />
             </div>
